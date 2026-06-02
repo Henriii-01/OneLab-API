@@ -1,37 +1,49 @@
 package config
 
 import (
+	"encoding/json"
 	"os"
+	"time"
 )
 
-// ConfigService defines the interface for retrieving configuration values.
 type ConfigService interface {
 	GetNextcloudBaseUrl() string
 	GetPaperlessBaseUrl() string
 	GetNextcloudUser() string
 	GetNextcloudPassword() string
 	GetPaperlessToken() string
+	GetAuthTokenExpiry() time.Duration
 }
 
-// AppConfig holds the internal representation of the configuration.
+type fileConfig struct {
+	TokenExpiryHours int `json:"tokenExpiryHours"`
+}
+
 type AppConfig struct {
-	NextcloudBaseUrl  string `json:"-"`
-	PaperlessBaseUrl  string `json:"-"`
-	NextcloudUser     string `json:"-"` // Not in config.json
-	NextcloudPassword string `json:"-"` // Not in config.json
-	PaperlessToken    string `json:"-"` // Not in config.json
+	NextcloudBaseUrl  string
+	PaperlessBaseUrl  string
+	NextcloudUser     string
+	NextcloudPassword string
+	PaperlessToken    string
+	AuthTokenExpiry   time.Duration
 }
 
 type configService struct {
 	cfg *AppConfig
 }
 
-// NewConfigService initializes a new configuration service.
 func NewConfigService() (ConfigService, error) {
-	// Set safe default values
 	cfg := &AppConfig{
 		NextcloudBaseUrl: "http://nextcloud.local/",
 		PaperlessBaseUrl: "http://paperless.local/",
+		AuthTokenExpiry:  6 * time.Hour,
+	}
+
+	if data, err := os.ReadFile("config/config.json"); err == nil {
+		var fileCfg fileConfig
+		if err := json.Unmarshal(data, &fileCfg); err == nil && fileCfg.TokenExpiryHours > 0 {
+			cfg.AuthTokenExpiry = time.Duration(fileCfg.TokenExpiryHours) * time.Hour
+		}
 	}
 
 	if url := os.Getenv("ONELAB_NEXTCLOUD_BASE_URL"); url != "" {
@@ -41,7 +53,6 @@ func NewConfigService() (ConfigService, error) {
 		cfg.PaperlessBaseUrl = url
 	}
 
-	// 3. Load Credentials directly from Environment Variables
 	cfg.NextcloudUser = os.Getenv("ONELAB_NEXTCLOUD_USER")
 	cfg.NextcloudPassword = os.Getenv("ONELAB_NEXTCLOUD_PASSWORD")
 	cfg.PaperlessToken = os.Getenv("ONELAB_PAPERLESS_TOKEN")
@@ -49,8 +60,9 @@ func NewConfigService() (ConfigService, error) {
 	return &configService{cfg: cfg}, nil
 }
 
-func (s *configService) GetNextcloudBaseUrl() string  { return s.cfg.NextcloudBaseUrl }
-func (s *configService) GetPaperlessBaseUrl() string  { return s.cfg.PaperlessBaseUrl }
-func (s *configService) GetNextcloudUser() string     { return s.cfg.NextcloudUser }
-func (s *configService) GetNextcloudPassword() string { return s.cfg.NextcloudPassword }
-func (s *configService) GetPaperlessToken() string    { return s.cfg.PaperlessToken }
+func (s *configService) GetNextcloudBaseUrl() string       { return s.cfg.NextcloudBaseUrl }
+func (s *configService) GetPaperlessBaseUrl() string       { return s.cfg.PaperlessBaseUrl }
+func (s *configService) GetNextcloudUser() string          { return s.cfg.NextcloudUser }
+func (s *configService) GetNextcloudPassword() string      { return s.cfg.NextcloudPassword }
+func (s *configService) GetPaperlessToken() string         { return s.cfg.PaperlessToken }
+func (s *configService) GetAuthTokenExpiry() time.Duration { return s.cfg.AuthTokenExpiry }
