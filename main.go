@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/HTMLuke/OneLab-API/auth"
 	"github.com/HTMLuke/OneLab-API/config"
 	"github.com/HTMLuke/OneLab-API/fileService"
 )
@@ -24,6 +25,10 @@ func main() {
 
 	mux := http.NewServeMux()
 
+	// Initialize Auth Service
+	authService := auth.NewJwtService(cfgService.GetAuthTokenExpiry(), cfgService.GetJwtSecret())
+	_ = auth.NewAuthController(authService)
+
 	// Initialize App Controller and specify exactly what Services are available.
 	fController := fileService.NewFileController()
 
@@ -40,10 +45,10 @@ func main() {
 
 	mux.HandleFunc("/api/v1/status", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		
+
 		// Check the status of all registered integrations
 		integrationStatuses := fController.CheckIntegrationsStatus(r.Context())
-		
+
 		res := Response{
 			Message:      "OneAPI running!",
 			Status:       "OK",
