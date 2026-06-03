@@ -27,7 +27,8 @@ func main() {
 
 	// Initialize Auth Service
 	authService := auth.NewJwtService(cfgService.GetAuthTokenExpiry(), cfgService.GetJwtSecret())
-	_ = auth.NewAuthController(authService)
+	authController := auth.NewAuthController(authService)
+	authController.RegisterRoutes(mux)
 
 	// Initialize App Controller and specify exactly what Services are available.
 	fController := fileService.NewFileController()
