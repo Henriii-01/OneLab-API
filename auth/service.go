@@ -24,10 +24,10 @@ type jwtService struct {
 	clients            map[string]jwtClient
 	tokens             map[string][]issuedToken
 	expirationDuration time.Duration
+	jwtSecret          []byte
 }
 type jwtClient struct {
 	clientSecret string
-	jwtSecret    []byte
 }
 type issuedToken struct {
 	token     string
@@ -35,18 +35,18 @@ type issuedToken struct {
 	expiresAt time.Time
 }
 
-func NewJwtService(duration time.Duration) AuthService {
+func NewJwtService(duration time.Duration, jwtSecret string) AuthService {
 	return &jwtService{
 		clients:            make(map[string]jwtClient),
 		tokens:             make(map[string][]issuedToken),
 		expirationDuration: duration,
+		jwtSecret:          []byte(jwtSecret),
 	}
 }
 
 func (s *jwtService) NewJwtClient(clientID string, clientSecret string) {
 	s.clients[clientID] = jwtClient{
 		clientSecret: clientSecret,
-		jwtSecret:    []byte(clientSecret),
 	}
 }
 
@@ -58,7 +58,7 @@ func (s *jwtService) ValidateCredentials(clientID string, clientSecret string) b
 }
 
 func (s *jwtService) GenerateToken(clientID string) (string, error) {
-	c, exists := s.clients[clientID]
+	_, exists := s.clients[clientID]
 	if !exists {
 		return "", errors.New("unknown client")
 	}
@@ -73,7 +73,11 @@ func (s *jwtService) GenerateToken(clientID string) (string, error) {
 			IssuedAt:  jwt.NewNumericDate(now),
 		},
 	}
-	signedString, _ := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(c.jwtSecret)
+	signedString, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(s.jwtSecret)
+	if err != nil {
+		return "", err
+	}
+
 	s.tokens[clientID] = append(s.tokens[clientID], issuedToken{
 		token:     signedString,
 		issuedAt:  now,
@@ -94,11 +98,10 @@ func (s *jwtService) ValidateToken(tokenString string) (string, error) {
 			if !ok {
 				return nil, errors.New("invalid claims")
 			}
-			c, exists := s.clients[claims.ClientID]
-			if !exists {
+			if _, exists := s.clients[claims.ClientID]; !exists {
 				return nil, errors.New("unknown client")
 			}
-			return c.jwtSecret, nil
+			return s.jwtSecret, nil
 		},
 	)
 	if err != nil {
