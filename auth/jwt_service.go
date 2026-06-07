@@ -22,19 +22,13 @@ type jwtClient struct {
 	clientSecret string
 }
 
-func NewJwtService(duration time.Duration, jwtSecret string) *jwtService {
+func NewJwtService(duration time.Duration, jwtSecret, clientID, clientSecret string) *jwtService {
 	s := &jwtService{
-		clients:            make(map[string]jwtClient),
+		clients:            map[string]jwtClient{clientID: {clientSecret: clientSecret}},
 		expirationDuration: duration,
 		jwtSecret:          []byte(jwtSecret),
 	}
 	return s
-}
-
-func (s *jwtService) NewJwtClient(clientID string, clientSecret string) {
-	s.clients[clientID] = jwtClient{
-		clientSecret: clientSecret,
-	}
 }
 
 func (s *jwtService) ValidateCredentials(clientID string, clientSecret string) bool {

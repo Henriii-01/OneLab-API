@@ -26,18 +26,16 @@ func main() {
 	secretService := secretProvider.NewSecretService()
 	mux := http.NewServeMux()
 
-	// Initialize Auth Service
-	jwtSvc := auth.NewJwtService(
+	// Initialize Auth Controller
+	authController := auth.NewAuthController()
+
+	authController.AddIntegration("jwt", auth.NewJwtService(
 		cfgService.GetAuthTokenExpiry(),
 		cfgService.GetJwtSecret(),
-	)
-
-	jwtSvc.NewJwtClient(
 		cfgService.GetAuthClientID(),
 		cfgService.GetAuthClientSecret(),
-	)
+	))
 
-	authController := auth.NewAuthController(jwtSvc)
 	authController.RegisterRoutes(mux)
 
 	// Initialize App Controller and specify exactly what Services are available.
