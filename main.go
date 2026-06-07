@@ -31,6 +31,11 @@ func main() {
 		cfgService.GetJwtSecret(),
 	)
 
+	jwtSvc.NewJwtClient(
+		cfgService.GetAuthClientID(),
+		cfgService.GetAuthClientSecret(),
+	)
+
 	authController := auth.NewAuthController(jwtSvc)
 	authController.RegisterRoutes(mux)
 

@@ -14,6 +14,8 @@ type ConfigService interface {
 	GetPaperlessToken() string
 	GetAuthTokenExpiry() time.Duration
 	GetJwtSecret() string
+	GetAuthClientID() string
+	GetAuthClientSecret() string
 }
 
 type fileConfig struct {
@@ -28,6 +30,8 @@ type AppConfig struct {
 	PaperlessToken    string
 	AuthTokenExpiry   time.Duration
 	JwtSecret         string
+	AuthClientID      string
+	AuthClientSecret  string
 }
 
 type configService struct {
@@ -59,6 +63,8 @@ func NewConfigService() (ConfigService, error) {
 	cfg.NextcloudPassword = os.Getenv("ONELAB_NEXTCLOUD_PASSWORD")
 	cfg.PaperlessToken = os.Getenv("ONELAB_PAPERLESS_TOKEN")
 	cfg.JwtSecret = os.Getenv("ONELAB_JWT_SECRET")
+	cfg.AuthClientID = os.Getenv("ONELAB_AUTH_CLIENT_ID")
+	cfg.AuthClientSecret = os.Getenv("ONELAB_AUTH_CLIENT_SECRET")
 
 	return &configService{cfg: cfg}, nil
 }
@@ -70,3 +76,5 @@ func (s *configService) GetNextcloudPassword() string      { return s.cfg.Nextcl
 func (s *configService) GetPaperlessToken() string         { return s.cfg.PaperlessToken }
 func (s *configService) GetAuthTokenExpiry() time.Duration { return s.cfg.AuthTokenExpiry }
 func (s *configService) GetJwtSecret() string              { return s.cfg.JwtSecret }
+func (s *configService) GetAuthClientID() string           { return s.cfg.AuthClientID }
+func (s *configService) GetAuthClientSecret() string       { return s.cfg.AuthClientSecret }
