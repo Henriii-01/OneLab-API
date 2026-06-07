@@ -5,9 +5,20 @@ import (
 	"mime/multipart"
 )
 
-// IntegrationService defines how the controller communicates with different target software.
-// Implementing this interface makes it easy to add new services in the future.
+// IntegrationService is the base interface.
+// Every registered integration MUST at least support checking its connectivity status.
 type IntegrationService interface {
-	TransferFile(ctx context.Context, file multipart.File, header *multipart.FileHeader) error
 	CheckStatus(ctx context.Context) error
+}
+
+// FileTransferer is an optional interface.
+// Only implemented by services that support uploading/transferring files.
+type FileTransferer interface {
+	TransferFile(ctx context.Context, file multipart.File, header *multipart.FileHeader) error
+}
+
+// FileLookuper is an optional interface.
+// Only implemented by services that support searching/looking up files.
+type FileLookuper interface {
+	LookupFile(ctx context.Context, filename string) (any, error)
 }

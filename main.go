@@ -8,6 +8,7 @@ import (
 	"github.com/HTMLuke/OneLab-API/auth"
 	"github.com/HTMLuke/OneLab-API/config"
 	"github.com/HTMLuke/OneLab-API/fileService"
+	"github.com/HTMLuke/OneLab-API/secretProvider"
 )
 
 type Response struct {
@@ -22,7 +23,7 @@ func main() {
 	if err != nil {
 		log.Printf("Warning: Failed to load config file (falling back to defaults & env): %v", err)
 	}
-
+	secretService := secretProvider.NewSecretService()
 	mux := http.NewServeMux()
 
 	// Initialize Auth Service
@@ -43,15 +44,8 @@ func main() {
 	fController := fileService.NewFileController()
 
 	// Inject integrations securely configured with their base URLs and credentials from the config service
-	fController.AddIntegration("nextcloud", fileService.NewNextcloudService(
-		cfgService.GetNextcloudBaseUrl(),
-		cfgService.GetNextcloudUser(),
-		cfgService.GetNextcloudPassword(),
-	))
-	fController.AddIntegration("paperless", fileService.NewPaperlessService(
-		cfgService.GetPaperlessBaseUrl(),
-		cfgService.GetPaperlessToken(),
-	))
+	fController.AddIntegration("nextcloud", fileService.NewNextcloudService(cfgService, secretService))
+	fController.AddIntegration("paperless", fileService.NewPaperlessService(cfgService, secretService))
 
 	mux.HandleFunc("/api/v1/status", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
