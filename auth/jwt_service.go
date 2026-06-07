@@ -4,37 +4,27 @@ import (
 	"errors"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
-	libJwt "github.com/golang-jwt/jwt/v5"
+	libjwt "github.com/golang-jwt/jwt/v5"
 )
 
 type Claims struct {
 	ClientID string `json:"clientID"`
-	libJwt.RegisteredClaims
+	libjwt.RegisteredClaims
 }
 
 type jwtService struct {
 	clients            map[string]jwtClient
-	tokens             map[string][]issuedToken
 	expirationDuration time.Duration
 	jwtSecret          []byte
 }
 
-func (s *jwtService) TokenDuration() time.Duration { return s.expirationDuration }
-
 type jwtClient struct {
 	clientSecret string
 }
-type issuedToken struct {
-	token     string
-	issuedAt  time.Time
-	expiresAt time.Time
-}
 
-func NewJwtService(duration time.Duration, jwtSecret string) JwtService {
+func NewJwtService(duration time.Duration, jwtSecret string) *jwtService {
 	s := &jwtService{
 		clients:            make(map[string]jwtClient),
-		tokens:             make(map[string][]issuedToken),
 		expirationDuration: duration,
 		jwtSecret:          []byte(jwtSecret),
 	}
@@ -52,41 +42,36 @@ func (s *jwtService) ValidateCredentials(clientID string, clientSecret string) b
 	return exists && c.clientSecret == clientSecret
 }
 
-func (s *jwtService) GenerateToken(clientID string) (string, error) {
+func (s *jwtService) GenerateToken(clientID string) (string, int, error) {
 	_, exists := s.clients[clientID]
 	if !exists {
-		return "", errors.New("unknown client")
+		return "", 0, errors.New("unknown client")
 	}
 
 	now := time.Now()
 	expirationTime := now.Add(s.expirationDuration)
 	claims := &Claims{
 		ClientID: clientID,
-		RegisteredClaims: libJwt.RegisteredClaims{
+		RegisteredClaims: libjwt.RegisteredClaims{
 			Subject:   clientID,
-			ExpiresAt: libJwt.NewNumericDate(expirationTime),
-			IssuedAt:  libJwt.NewNumericDate(now),
+			ExpiresAt: libjwt.NewNumericDate(expirationTime),
+			IssuedAt:  libjwt.NewNumericDate(now),
 		},
 	}
-	signedString, err := libJwt.NewWithClaims(libJwt.SigningMethodHS256, claims).SignedString(s.jwtSecret)
+	signedString, err := libjwt.NewWithClaims(libjwt.SigningMethodHS256, claims).SignedString(s.jwtSecret)
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 
-	s.tokens[clientID] = append(s.tokens[clientID], issuedToken{
-		token:     signedString,
-		issuedAt:  now,
-		expiresAt: expirationTime,
-	})
-	return signedString, nil
+	return signedString, int(s.expirationDuration.Seconds()), nil
 }
 
-func (s *jwtService) ValidateJWT(tokenString string) (string, error) {
-	parsedToken, err := jwt.ParseWithClaims(
+func (s *jwtService) ValidateToken(tokenString string) (string, error) {
+	parsedToken, err := libjwt.ParseWithClaims(
 		tokenString,
 		&Claims{},
-		func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*libJwt.SigningMethodHMAC); !ok {
+		func(token *libjwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*libjwt.SigningMethodHMAC); !ok {
 				return nil, errors.New("unexpected signing method")
 			}
 			claims, ok := token.Claims.(*Claims)
