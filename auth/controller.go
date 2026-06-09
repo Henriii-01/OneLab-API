@@ -30,7 +30,7 @@ type tokenResponse struct {
 }
 
 // Token authenticates the caller via clientId & clientSecret, then issues a signed token
-func (c *AuthController) Token(w http.ResponseWriter, r *http.Request) {
+func (c *AuthController) IssueToken(w http.ResponseWriter, r *http.Request) {
 	var req tokenRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
@@ -86,5 +86,5 @@ func (c *AuthController) Middleware(next http.Handler) http.Handler {
 }
 
 func (c *AuthController) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("POST /auth/token", c.Token)
+	mux.HandleFunc("POST /api/v1/auth/token", c.IssueToken)
 }
