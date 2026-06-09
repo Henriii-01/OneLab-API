@@ -29,6 +29,9 @@ jobs:
           SECRET_PL_TOKEN: ${{ secrets.DEV_PAPERLESS_TOKEN }}
           SECRET_NC_BASE_URL: ${{ secrets.ONELAB_NEXTCLOUD_BASE_URL }}
           SECRET_PL_BASE_URL: ${{ secrets.ONELAB_PAPERLESS_BASE_URL }}
+          SECRET_JWT: ${{ secrets.DEV_JWT_SECRET }}
+          SECRET_CLIENT_ID: ${{ secrets.DEV_AUTH_CLIENT_ID }}
+          SECRET_CLIENT_SECRET: ${{ secrets.DEV_AUTH_CLIENT_SECRET }}
         run: |
           docker run -d \
             --name onelab-api-dev \
@@ -42,6 +45,9 @@ jobs:
             -e ONELAB_PAPERLESS_TOKEN="$SECRET_PL_TOKEN" \
             -e ONELAB_NEXTCLOUD_BASE_URL="$SECRET_NC_BASE_URL" \
             -e ONELAB_PAPERLESS_BASE_URL="$SECRET_PL_BASE_URL" \
+            -e ONELAB_JWT_SECRET="$SECRET_JWT" \
+            -e ONELAB_AUTH_CLIENT_ID="$SECRET_CLIENT_ID" \
+            -e ONELAB_AUTH_CLIENT_SECRET="$SECRET_CLIENT_SECRET" \
             onelab-api:dev
       - name: Cleanup
         run: docker image prune -f
