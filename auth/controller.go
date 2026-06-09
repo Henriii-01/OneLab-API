@@ -29,7 +29,7 @@ type tokenResponse struct {
 	ExpiresIn int    `json:"expiresIn"`
 }
 
-// Token authenticates the caller via clientId & clientSecret, then issues a signed token
+// IssueToken authenticates the caller via clientId & clientSecret, then issues a signed token type is defined by AddIntegration
 func (c *AuthController) IssueToken(w http.ResponseWriter, r *http.Request) {
 	var req tokenRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
