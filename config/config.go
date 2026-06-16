@@ -7,31 +7,23 @@ import (
 )
 
 type ConfigService interface {
-	GetNextcloudBaseUrl() string
-	GetPaperlessBaseUrl() string
-	GetNextcloudUser() string
-	GetNextcloudPassword() string
-	GetPaperlessToken() string
-	GetAuthTokenExpiry() time.Duration
-	GetJwtSecret() string
-	GetAuthClientID() string
-	GetAuthClientSecret() string
+	GetAuthExpiry() time.Duration
+	IsServiceEnabled(name string) bool
+	IsAuthEnabled(name string) bool
 }
 
 type fileConfig struct {
-	TokenExpiryHours int `json:"tokenExpiryHours"`
+	AuthExpiryHours int `json:"authExpiryHours"`
+	Integrations    struct {
+		EnabledServices map[string]bool `json:"services"`
+		EnabledAuth     map[string]bool `json:"auth"`
+	} `json:"integrations"`
 }
 
 type AppConfig struct {
-	NextcloudBaseUrl  string
-	PaperlessBaseUrl  string
-	NextcloudUser     string
-	NextcloudPassword string
-	PaperlessToken    string
-	AuthTokenExpiry   time.Duration
-	JwtSecret         string
-	AuthClientID      string
-	AuthClientSecret  string
+	AuthExpiry      time.Duration
+	EnabledServices map[string]bool
+	EnabledAuth     map[string]bool
 }
 
 type configService struct {
@@ -40,41 +32,35 @@ type configService struct {
 
 func NewConfigService() (ConfigService, error) {
 	cfg := &AppConfig{
-		NextcloudBaseUrl: "http://nextcloud.local/",
-		PaperlessBaseUrl: "http://paperless.local/",
-		AuthTokenExpiry:  6 * time.Hour,
+		AuthExpiry:      6 * time.Hour,
+		EnabledServices: map[string]bool{},
+		EnabledAuth:     map[string]bool{},
 	}
 
 	if data, err := os.ReadFile("config/config.json"); err == nil {
 		var fileCfg fileConfig
-		if err := json.Unmarshal(data, &fileCfg); err == nil && fileCfg.TokenExpiryHours > 0 {
-			cfg.AuthTokenExpiry = time.Duration(fileCfg.TokenExpiryHours) * time.Hour
+		if err := json.Unmarshal(data, &fileCfg); err == nil {
+			if fileCfg.AuthExpiryHours > 0 {
+				cfg.AuthExpiry = time.Duration(fileCfg.AuthExpiryHours) * time.Hour
+			}
+			if fileCfg.Integrations.EnabledServices != nil {
+				cfg.EnabledServices = fileCfg.Integrations.EnabledServices
+			}
+			if fileCfg.Integrations.EnabledAuth != nil {
+				cfg.EnabledAuth = fileCfg.Integrations.EnabledAuth
+			}
 		}
 	}
-
-	if url := os.Getenv("ONELAB_NEXTCLOUD_BASE_URL"); url != "" {
-		cfg.NextcloudBaseUrl = url
-	}
-	if url := os.Getenv("ONELAB_PAPERLESS_BASE_URL"); url != "" {
-		cfg.PaperlessBaseUrl = url
-	}
-
-	cfg.NextcloudUser = os.Getenv("ONELAB_NEXTCLOUD_USER")
-	cfg.NextcloudPassword = os.Getenv("ONELAB_NEXTCLOUD_PASSWORD")
-	cfg.PaperlessToken = os.Getenv("ONELAB_PAPERLESS_TOKEN")
-	cfg.JwtSecret = os.Getenv("ONELAB_JWT_SECRET")
-	cfg.AuthClientID = os.Getenv("ONELAB_AUTH_CLIENT_ID")
-	cfg.AuthClientSecret = os.Getenv("ONELAB_AUTH_CLIENT_SECRET")
 
 	return &configService{cfg: cfg}, nil
 }
 
-func (s *configService) GetNextcloudBaseUrl() string       { return s.cfg.NextcloudBaseUrl }
-func (s *configService) GetPaperlessBaseUrl() string       { return s.cfg.PaperlessBaseUrl }
-func (s *configService) GetNextcloudUser() string          { return s.cfg.NextcloudUser }
-func (s *configService) GetNextcloudPassword() string      { return s.cfg.NextcloudPassword }
-func (s *configService) GetPaperlessToken() string         { return s.cfg.PaperlessToken }
-func (s *configService) GetAuthTokenExpiry() time.Duration { return s.cfg.AuthTokenExpiry }
-func (s *configService) GetJwtSecret() string              { return s.cfg.JwtSecret }
-func (s *configService) GetAuthClientID() string           { return s.cfg.AuthClientID }
-func (s *configService) GetAuthClientSecret() string       { return s.cfg.AuthClientSecret }
+func (s *configService) GetAuthExpiry() time.Duration { return s.cfg.AuthExpiry }
+
+// IsServiceEnabled tracks whether a service integration is enabled or disabled
+// unknown names default to false
+func (s *configService) IsServiceEnabled(name string) bool { return s.cfg.EnabledServices[name] }
+
+// IsAuthEnabled tracks whether an auth integration is enabled or disabled
+// unknown names default to false
+func (s *configService) IsAuthEnabled(name string) bool { return s.cfg.EnabledAuth[name] }

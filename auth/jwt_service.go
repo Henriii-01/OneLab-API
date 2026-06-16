@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/HTMLuke/OneLab-API/secretProvider"
 	libjwt "github.com/golang-jwt/jwt/v5"
 )
 
@@ -22,13 +23,24 @@ type jwtClient struct {
 	clientSecret string
 }
 
-func NewJwtService(duration time.Duration, jwtSecret, clientID, clientSecret string) *jwtService {
-	s := &jwtService{
+func NewJwtService(duration time.Duration, secretService secretProvider.SecretService) (AuthService, error) {
+	jwtSecret, err := secretService.GetSecret("ONELAB_JWT_SECRET")
+	if err != nil {
+		return nil, err
+	}
+	clientID, err := secretService.GetSecret("ONELAB_AUTH_CLIENT_ID")
+	if err != nil {
+		return nil, err
+	}
+	clientSecret, err := secretService.GetSecret("ONELAB_AUTH_CLIENT_SECRET")
+	if err != nil {
+		return nil, err
+	}
+	return &jwtService{
 		clients:            map[string]jwtClient{clientID: {clientSecret: clientSecret}},
 		expirationDuration: duration,
 		jwtSecret:          []byte(jwtSecret),
-	}
-	return s
+	}, nil
 }
 
 func (s *jwtService) ValidateCredentials(clientID string, clientSecret string) bool {

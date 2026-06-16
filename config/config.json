@@ -1,0 +1,12 @@
+{
+  "authExpiryHours": 24,
+  "integrations": {
+    "services": {
+      "nextcloud": false,
+      "paperless": false
+    },
+    "auth": {
+      "jwt": false
+    }
+  }
+}

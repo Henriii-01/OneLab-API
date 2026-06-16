@@ -10,19 +10,16 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/HTMLuke/OneLab-API/config"
 	"github.com/HTMLuke/OneLab-API/secretProvider"
 )
 
 // NextcloudService handles sending files to Nextcloud.
 type NextcloudService struct {
-	apiLookupUrl  string
-	apiAddUrl     string
-	apiGetUrl     string
-	username      string
-	password      string
-	cnfService    config.ConfigService
-	secretService secretProvider.SecretService
+	apiLookupUrl string
+	apiAddUrl    string
+	apiGetUrl    string
+	username     string
+	password     string
 }
 
 type NextcloudFileMetadata struct {
@@ -70,21 +67,29 @@ type NextcloudSearchResponse struct {
 	} `json:"ocs"`
 }
 
-func NewNextcloudService(cnf config.ConfigService, secretService secretProvider.SecretService) *NextcloudService {
-	apiLookup, _ := url.JoinPath(cnf.GetNextcloudBaseUrl(), "ocs/v2.php/search/providers/files/search")
-	apiAdd, _ := url.JoinPath(cnf.GetNextcloudBaseUrl(), "remote.php/dav/files/")
-	apiGet, _ := url.JoinPath(cnf.GetNextcloudBaseUrl(), "remote.php/dav/files/")
-	username := secretService.GetNextcloudUser()
-	password := secretService.GetNextcloudPassword()
-	return &NextcloudService{
-		apiLookupUrl:  apiLookup,
-		apiAddUrl:     apiAdd,
-		apiGetUrl:     apiGet,
-		username:      username,
-		password:      password,
-		cnfService:    cnf,
-		secretService: secretService,
+func NewNextcloudService(secretService secretProvider.SecretService) (*NextcloudService, error) {
+	username, err := secretService.GetSecret("ONELAB_NEXTCLOUD_USER")
+	if err != nil {
+		return nil, err
 	}
+	password, err := secretService.GetSecret("ONELAB_NEXTCLOUD_PASSWORD")
+	if err != nil {
+		return nil, err
+	}
+	baseURL, _ := secretService.GetSecret("ONELAB_NEXTCLOUD_BASE_URL")
+	if baseURL == "" {
+		baseURL = "http://nextcloud.local/"
+	}
+	apiLookup, _ := url.JoinPath(baseURL, "ocs/v2.php/search/providers/files/search")
+	apiAdd, _ := url.JoinPath(baseURL, "remote.php/dav/files/")
+	apiGet, _ := url.JoinPath(baseURL, "remote.php/dav/files/")
+	return &NextcloudService{
+		apiLookupUrl: apiLookup,
+		apiAddUrl:    apiAdd,
+		apiGetUrl:    apiGet,
+		username:     username,
+		password:     password,
+	}, nil
 }
 
 func (s *NextcloudService) AddFile(ctx context.Context, file []byte, filename string) error {

@@ -10,19 +10,16 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/HTMLuke/OneLab-API/config"
 	"github.com/HTMLuke/OneLab-API/secretProvider"
 )
 
 // PaperlessService handles sending files to Paperless-ngx.
 type PaperlessService struct {
-	checkURL      string
-	addUrl        string
-	getUrl        string
-	apiLookupUrl  string
-	token         string
-	cnfService    config.ConfigService
-	secretService secretProvider.SecretService
+	checkURL     string
+	addUrl       string
+	getUrl       string
+	apiLookupUrl string
+	token        string
 }
 
 type PaperlessFileMetadata struct {
@@ -66,22 +63,26 @@ type PaperlessSearchResponse struct {
 	Results  []PaperlessFileMetadata `json:"results"`
 }
 
-func NewPaperlessService(cfgService config.ConfigService, secretService secretProvider.SecretService) *PaperlessService {
-	baseURL := cfgService.GetPaperlessBaseUrl()
-	token := secretService.GetPaperlessToken()
+func NewPaperlessService(secretService secretProvider.SecretService) (*PaperlessService, error) {
+	token, err := secretService.GetSecret("ONELAB_PAPERLESS_TOKEN")
+	if err != nil {
+		return nil, err
+	}
+	baseURL, _ := secretService.GetSecret("ONELAB_PAPERLESS_BASE_URL")
+	if baseURL == "" {
+		baseURL = "http://paperless.local/"
+	}
 	checkURL, _ := url.JoinPath(baseURL, "api/documents/")
 	addUrl, _ := url.JoinPath(baseURL, "api/documents/post_document/")
 	getUrl, _ := url.JoinPath(baseURL, "api/documents/")
 	apiLookupUrl, _ := url.JoinPath(baseURL, "api/documents/")
 	return &PaperlessService{
-		checkURL:      checkURL,
-		addUrl:        addUrl,
-		getUrl:        getUrl,
-		token:         token,
-		apiLookupUrl:  apiLookupUrl,
-		cnfService:    cfgService,
-		secretService: secretService,
-	}
+		checkURL:     checkURL,
+		addUrl:       addUrl,
+		getUrl:       getUrl,
+		token:        token,
+		apiLookupUrl: apiLookupUrl,
+	}, nil
 }
 
 func (s *PaperlessService) AddFile(ctx context.Context, file []byte, filename string) error {
@@ -230,4 +231,3 @@ func (s *PaperlessService) CheckStatus(ctx context.Context) error {
 
 	return nil
 }
-
