@@ -26,24 +26,11 @@ func main() {
 	secretService := secretProvider.NewSecretService()
 	mux := http.NewServeMux()
 
-	// Initialize Auth Controller
+	// Build controllers and wire in every integration enabled in config
 	authController := auth.NewAuthController()
-
-	authController.AddIntegration("jwt", auth.NewJwtService(
-		cfgService.GetAuthTokenExpiry(),
-		cfgService.GetJwtSecret(),
-		cfgService.GetAuthClientID(),
-		cfgService.GetAuthClientSecret(),
-	))
-
-	authController.RegisterRoutes(mux)
-
-	// Initialize App Controller and specify exactly what Services are available.
 	fController := fileService.NewFileController()
-
-	// Inject integrations securely configured with their base URLs and credentials from the config service
-	fController.AddIntegration("nextcloud", fileService.NewNextcloudService(cfgService, secretService))
-	fController.AddIntegration("paperless", fileService.NewPaperlessService(cfgService, secretService))
+	registerIntegrations(cfgService, secretService, fController, authController)
+	authController.RegisterRoutes(mux)
 
 	mux.HandleFunc("/api/v1/status", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
