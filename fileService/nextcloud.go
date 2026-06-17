@@ -67,7 +67,7 @@ type NextcloudSearchResponse struct {
 	} `json:"ocs"`
 }
 
-func NewNextcloudService(secretService secretProvider.SecretService) (*NextcloudService, error) {
+func NewNextcloudService(baseURL string, secretService secretProvider.SecretService) (*NextcloudService, error) {
 	username, err := secretService.GetSecret("ONELAB_NEXTCLOUD_USER")
 	if err != nil {
 		return nil, err
@@ -76,7 +76,6 @@ func NewNextcloudService(secretService secretProvider.SecretService) (*Nextcloud
 	if err != nil {
 		return nil, err
 	}
-	baseURL, _ := secretService.GetSecret("ONELAB_NEXTCLOUD_BASE_URL")
 	if baseURL == "" {
 		baseURL = "http://nextcloud.local/"
 	}

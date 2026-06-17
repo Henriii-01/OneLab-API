@@ -63,12 +63,11 @@ type PaperlessSearchResponse struct {
 	Results  []PaperlessFileMetadata `json:"results"`
 }
 
-func NewPaperlessService(secretService secretProvider.SecretService) (*PaperlessService, error) {
+func NewPaperlessService(baseURL string, secretService secretProvider.SecretService) (*PaperlessService, error) {
 	token, err := secretService.GetSecret("ONELAB_PAPERLESS_TOKEN")
 	if err != nil {
 		return nil, err
 	}
-	baseURL, _ := secretService.GetSecret("ONELAB_PAPERLESS_BASE_URL")
 	if baseURL == "" {
 		baseURL = "http://paperless.local/"
 	}
