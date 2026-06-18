@@ -67,6 +67,12 @@ type NextcloudSearchResponse struct {
 	} `json:"ocs"`
 }
 
+func init() {
+	RegisterIntegration("nextcloud", func(baseURL string, s secretProvider.SecretService) (IntegrationService, error) {
+		return NewNextcloudService(baseURL, s)
+	})
+}
+
 func NewNextcloudService(baseURL string, secretService secretProvider.SecretService) (*NextcloudService, error) {
 	username, err := secretService.GetSecret("ONELAB_NEXTCLOUD_USER")
 	if err != nil {

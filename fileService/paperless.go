@@ -63,6 +63,12 @@ type PaperlessSearchResponse struct {
 	Results  []PaperlessFileMetadata `json:"results"`
 }
 
+func init() {
+	RegisterIntegration("paperless", func(baseURL string, s secretProvider.SecretService) (IntegrationService, error) {
+		return NewPaperlessService(baseURL, s)
+	})
+}
+
 func NewPaperlessService(baseURL string, secretService secretProvider.SecretService) (*PaperlessService, error) {
 	token, err := secretService.GetSecret("ONELAB_PAPERLESS_TOKEN")
 	if err != nil {

@@ -23,6 +23,10 @@ type jwtClient struct {
 	clientSecret string
 }
 
+func init() {
+	RegisterAuth("jwt", NewJwtService)
+}
+
 func NewJwtService(duration time.Duration, secretService secretProvider.SecretService) (AuthService, error) {
 	jwtSecret, err := secretService.GetSecret("ONELAB_JWT_SECRET")
 	if err != nil {
