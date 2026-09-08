@@ -1,0 +1,23 @@
+{
+  "authExpiryHours": 24,
+  "integrations": {
+    "services": {
+      "nextcloud": {
+        "enabled": false,
+        "url": "http://nextcloud.local"
+      },
+      "paperless": {
+        "enabled": false,
+        "url": "http://paperless.local"
+      },
+      "dockerCmd": {
+        "enabled": false,
+        "url": "local"
+      }
+    },
+    "auth": {
+      "jwt": false,
+      "oauth": false
+    }
+  }
+}
